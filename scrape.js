@@ -64,7 +64,7 @@ function buildHTML(headers, rows) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>WCA Kinch Rankings</title>
+<title>Kinch Rankings</title>
 <style>
   body { font-family: Arial, sans-serif; margin:20px; background:#f9f9f9; }
   table { border-collapse: collapse; width: 100%; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
@@ -76,7 +76,7 @@ function buildHTML(headers, rows) {
 </style>
 </head>
 <body>
-<h1>WCA Kinch Rankings (Scraped)</h1>
+<h1>Kinch rankings</h1>
 <table>
   ${thead}
   <tbody>${tbody}</tbody>

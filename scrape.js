@@ -34,7 +34,6 @@ function eventToIcon(event) {
     "sq1": "sq1"
   };
   const code = codeMap[event.toLowerCase()];
-  if (!code) return event; // fallback to text if no icon
   return `<img src="https://raw.githubusercontent.com/cubing/icons/main/src/svg/event/${code}.svg" alt="${event}" width="24" height="24">`;
 }
 

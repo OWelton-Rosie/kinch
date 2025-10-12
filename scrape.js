@@ -12,12 +12,37 @@ function codeToFlagEmoji(code) {
   );
 }
 
+// Map event names (like "3x3") to their SVG icons
+function eventToIcon(event) {
+  const codeMap = {
+    "333": "333",
+    "222": "222",
+    "333bf": "333bf",
+    "333oh": "333oh",
+    "333fm": "333fm",
+    "333mbf": "333mbf",
+    "444": "444",
+    "444bf": "444bf",
+    "555": "555",
+    "555bf": "555bf",
+    "666": "666",
+    "777": "777",
+    "clock": "clock",
+    "minx": "minx",
+    "pyram": "pyram",
+    "skewb": "skewb",
+    "sq1": "sq1"
+  };
+  const code = codeMap[event.toLowerCase()];
+  if (!code) return event; // fallback to text if no icon
+  return `<img src="https://raw.githubusercontent.com/cubing/icons/main/src/svg/event/${code}.svg" alt="${event}" width="24" height="24">`;
+}
+
 async function scrapeKinch() {
   const url = "https://wca.cuber.pro/";
   const { data: html } = await axios.get(url);
   const $ = cheerio.load(html);
 
-  // Grab table headers
   const headers = [];
   $("table thead tr th").each((_, th) => {
     const text = $(th).text().trim();
@@ -26,7 +51,7 @@ async function scrapeKinch() {
 
   const rows = [];
   $("table tbody tr").each((_, tr) => {
-    const children = $(tr).children(); // both td and th
+    const children = $(tr).children();
     const rank = $(children[0]).text().trim();
 
     const countryTh = $(children[1]);
@@ -38,7 +63,6 @@ async function scrapeKinch() {
     const overallTd = $(children[2]);
     const overall = overallTd.find("strong, small").text().trim();
 
-    // Remaining event scores
     const eventScores = [];
     for (let i = 3; i < children.length; i++) {
       const td = $(children[i]);
@@ -51,9 +75,17 @@ async function scrapeKinch() {
     rows.push([rank, `${flag} ${countryName}`, overall, ...eventScores]);
   });
 
-  const newHeaders = ["Rank", "Country", "Overall", ...headers.slice(3)]; // skip Rank, Country, Overall in original
+  // Convert event headers to icons
+  const newHeaders = ["Rank", "Country", "Overall", ...headers.slice(3).map(eventToIcon)];
 
-  return { headers: newHeaders, rows };
+  // Convert each row's event scores to icons
+  const iconRows = rows.map(row => {
+    const [rank, country, overall, ...scores] = row;
+    const iconScores = scores.map(eventToIcon);
+    return [rank, country, overall, ...iconScores];
+  });
+
+  return { headers: newHeaders, rows: iconRows };
 }
 
 function buildHTML(headers, rows) {
@@ -73,6 +105,7 @@ function buildHTML(headers, rows) {
   tr:nth-child(even){ background:#f2f2f2; }
   td:first-child, th:first-child{ text-align:right; }
   td:nth-child(2), th:nth-child(2){ text-align:left; }
+  img { vertical-align: middle; }
 </style>
 </head>
 <body>

@@ -1,3 +1,5 @@
+console.log(`\n=== Scrape started at ${new Date().toLocaleString()} ===`);
+
 const axios = require("axios");
 const cheerio = require("cheerio");
 const fs = require("fs");

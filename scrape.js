@@ -2,7 +2,10 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 const fs = require("fs");
 
-// Convert 2-letter country code to Twemoji URL
+// ---------------------
+// Utilities
+// ---------------------
+
 function countryCodeToTwemojiURL(code) {
   if (!code || code.length !== 2) return "";
   const chars = code.toUpperCase().split("");
@@ -11,13 +14,11 @@ function countryCodeToTwemojiURL(code) {
   return `https://twemoji.maxcdn.com/v/latest/72x72/${hex}.png`;
 }
 
-// Return Twemoji flag image HTML
 function codeToFlagTwemoji(code) {
   const url = countryCodeToTwemojiURL(code);
   return `<img src="${url}" width="28" height="28" style="vertical-align:middle; margin-right:8px;" alt="${code}">`;
 }
 
-// Map event names to SVG icons
 function eventToIcon(event) {
   const codeMap = {
     "333": "333",
@@ -43,17 +44,33 @@ function eventToIcon(event) {
               alt="${event}" width="32" height="32" style="vertical-align:middle;">`;
 }
 
+// ---------------------
+// Scraping
+// ---------------------
 async function scrapeKinch() {
+  console.log("Fetching site...");
   const url = "https://wca.cuber.pro/";
-  const { data: html } = await axios.get(url);
+
+  const { data: html } = await axios.get(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    },
+    timeout: 20000,
+  });
+
+  console.log("Loaded HTML, parsing...");
   const $ = cheerio.load(html);
 
+  // Headers
   const headers = [];
   $("table thead tr th").each((_, th) => {
     const text = $(th).text().trim();
     if (text) headers.push(text);
   });
 
+  // Rows
   const rows = [];
   $("table tbody tr").each((_, tr) => {
     const children = $(tr).children();
@@ -87,7 +104,11 @@ async function scrapeKinch() {
   return { headers: newHeaders, rows };
 }
 
+// ---------------------
+// Build HTML
+// ---------------------
 function buildHTML(headers, rows) {
+  console.log("Building HTML output...");
   const thead = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>`;
   const tbody = rows
     .map(r => `<tr class="${r.class}">${r.data.map(c => `<td>${c}</td>`).join("")}</tr>`)
@@ -99,43 +120,17 @@ function buildHTML(headers, rows) {
 <meta charset="UTF-8">
 <title>Kinch Rankings</title>
 <style>
-  body { 
-    font-family: Arial, sans-serif; 
-    margin:20px; 
-    background:#121212; 
-    color:#fff;
-  }
-  table { 
-    border-collapse: collapse; 
-    width: 100%; 
-    background:#1c1c1c; 
-    box-shadow:0 2px 8px rgba(0,0,0,0.3); 
-  }
-  th, td { 
-    border:1px solid #333; 
-    padding:6px 8px; 
-    text-align:center; 
-    font-size:13px; 
-    color:#fff; 
-  }
-  th { 
-    background-color:#46b04c; 
-    color:white; 
-    position:sticky; 
-    top:0; 
-  }
+  body { font-family: Arial, sans-serif; margin:20px; background:#121212; color:#fff; }
+  table { border-collapse: collapse; width: 100%; background:#1c1c1c; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+  th, td { border:1px solid #333; padding:6px 8px; text-align:center; font-size:13px; color:#fff; }
+  th { background-color:#46b04c; color:white; position:sticky; top:0; }
   tr:nth-child(even){ background:#262626; }
   td:first-child, th:first-child{ text-align:right; }
   td:nth-child(2), th:nth-child(2){ text-align:left; }
   img { vertical-align: middle; }
-  th img { filter: brightness(0) invert(1); width:32px; height:32px; } /* White event icons */
+  th img { filter: brightness(0) invert(1); width:32px; height:32px; } 
   tr.highlight-nz { background:#333 !important; font-weight:bold; }
-
-  /* Bold Rank, Country, Overall columns */
-  th:nth-child(-n+3),
-  td:nth-child(-n+3) {
-    font-weight: bold;
-  }
+  th:nth-child(-n+3), td:nth-child(-n+3) { font-weight: bold; }
 </style>
 </head>
 <body>
@@ -148,13 +143,32 @@ function buildHTML(headers, rows) {
 </html>`;
 }
 
-(async () => {
+// ---------------------
+// Main function (exportable)
+// ---------------------
+async function updateKinch(outputPath = "output.html") {
+  console.log("Starting scrape...");
   try {
     const { headers, rows } = await scrapeKinch();
+    console.log(`Scrape complete, found ${rows.length} rows`);
     const html = buildHTML(headers, rows);
-    fs.writeFileSync("output.html", html, "utf8");
-    console.log(`Scraped ${rows.length} rows and wrote output.html`);
+    fs.writeFileSync(outputPath, html, "utf8");
+    console.log(`Wrote ${outputPath}`);
   } catch (err) {
-    console.error("Error:", err.message);
+    console.error("Error during scrape:", err.message);
   }
-})();
+}
+
+// ---------------------
+// Run if called directly
+// ---------------------
+if (require.main === module) {
+  (async () => {
+    await updateKinch("output.html");
+  })();
+}
+
+// ---------------------
+// Export for cron/other scripts
+// ---------------------
+module.exports = updateKinch;

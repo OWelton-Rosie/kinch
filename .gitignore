@@ -1,4 +1,3 @@
 /node_modules/
-*.html
 .DS_Store
 cron.log

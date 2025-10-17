@@ -1,11 +1,13 @@
-name: Auto Update Kinch Rankings
+name: Update Kinch Rankings
 
 on:
   # Runs every 6 hours
   schedule:
-    - cron: "0 */6 * * *"
-  # Allows manual trigger from the Actions tab
+    - cron: "0 0 * * 0"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   update:
@@ -31,4 +33,4 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add output.html
-          git diff --cached --quiet && echo "No changes to commit" || (git commit -m "Auto-update Kinch Rankings" && git push)
+          git diff --cached --quiet && echo "No changes to commit" || (git commit -m "Update Kinch Rankings" && git push)
